@@ -36,10 +36,12 @@ def on_mult_line(m_ar, m_br):
 
     for i in range(m_ar):
         for k in range(m_br):
-            temp = 0
+            rowCache = phc[i]
+            temp1 = pha[i][k]
+            temp2 = phb[k]
             for j in range(m_ar):
-                temp += pha[i][k] * phb[k][j]
-            phc[i][j] = temp
+                rowCache[j] += temp1 * temp2[j]
+            phc[i] = rowCache
 
     time2 = time.time()
     print(f"Time: {time2 - time1:.3f} seconds")
@@ -51,10 +53,6 @@ def on_mult_line(m_ar, m_br):
             print(phc[i][j], end=" ")
     print()
 
-# Function for block x block matrix multiplication
-def on_mult_block(m_ar, m_br, bk_size):
-    pass  # Add your code here
-
 # Main function
 def main():
     lin, col, block_size = 0, 0, 0
@@ -63,7 +61,6 @@ def main():
     while op != 0:
         print("\n1. Multiplication")
         print("2. Line Multiplication")
-        print("3. Block Multiplication")
         op = int(input("Selection?: "))
 
         if op == 0:
@@ -76,9 +73,6 @@ def main():
             on_mult(lin, col)
         elif op == 2:
             on_mult_line(lin, col)
-        elif op == 3:
-            block_size = int(input("Block Size? "))
-            on_mult_block(lin, col, block_size)
 
 
 if __name__ == "__main__":
