@@ -4,6 +4,7 @@
 #include <time.h>
 #include <cstdlib>
 #include <papi.h>
+#include <omp.h>
 
 using namespace std;
 
@@ -76,7 +77,7 @@ void OnMult(int m_ar, int m_br)
 void OnMultLine(int m_ar, int m_br)
 {
 	
-	SYSTEMTIME Time1, Time2;
+	double Time1, Time2;
 	
 	char st[100];
 	double temp;
@@ -102,21 +103,20 @@ void OnMultLine(int m_ar, int m_br)
 
 
 
-    Time1 = clock();
+    Time1 =omp_get_wtime();
 
-	for(i=0; i<m_ar; i++)
-	{	for( k=0; k<m_br; k++)
-		{	
-			for( j=0; j<m_ar; j++)
-			{	
-				phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
-			}
-		}
-	}
+	#pragma omp parallel
+	for (int i=0; i<m_ar; i++)
+		for (int k=0; k<m_br; k++)
+			#pragma omp for
+			for (int j=0; j<m_ar; j++)
+					phc[i*m_ar+j] += pha[i*m_ar+k] * phb[k*m_br+j];
 
 
-    Time2 = clock();
-	sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) / CLOCKS_PER_SEC);
+
+    Time2 = omp_get_wtime();
+	
+	sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) );
 	cout << st;
 
 	// display 10 elements of the result matrix tto verify correctness
