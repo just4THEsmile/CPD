@@ -119,7 +119,7 @@ void OnMultLine(int m_ar, int m_br)
 	sprintf(st, "Time: %3.3f seconds\n", (double)(Time2 - Time1) );
 	cout << st;
 
-	// display 10 elements of the result matrix tto verify correctness
+	// display 10 elements of the result matrix to verify correctness
 	cout << "Result matrix: " << endl;
 	for(i=0; i<1; i++)
 	{	for(j=0; j<min(10,m_br); j++)
