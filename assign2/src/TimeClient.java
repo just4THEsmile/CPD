@@ -1,50 +1,44 @@
-import java.net.*;
 import java.io.*;
- 
-/**
- * This program demonstrates a simple TCP/IP socket client.
- *
- * @author www.codejava.net
- */
+import java.net.*;
+import java.util.Scanner;
+
 public class TimeClient {
- 
     public static void main(String[] args) {
-        if (args.length < 2) return;
- 
+        if (args.length < 2) {
+            System.out.println("Usage: java TimeClient <hostname> <port>");
+            return;
+        }
+
         String hostname = args[0];
         int port = Integer.parseInt(args[1]);
-        System.out.println("Connected to the server...");
+
         try (Socket socket = new Socket(hostname, port)) {
-            for (int i = 1; i < 100; i++) {
-                OutputStream output = socket.getOutputStream();
-                PrintWriter writer = new PrintWriter(output, true);
-                InputStream input = socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+            OutputStream output = socket.getOutputStream();
+            PrintWriter writer = new PrintWriter(output, true);
 
-                System.out.println("Received value: " + i*2);
-            
-                writer.println(i*2);
-                
+            InputStream input = socket.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-    
-                String time = reader.readLine();
+            Scanner scanner = new Scanner(System.in);
 
-                System.out.println(time);
-                
-                Thread.sleep(1000);
+            for (int i = 0; i < 5; i++) {
+                System.out.print("Enter an int: ");
+                int n = scanner.nextInt();
+                writer.println(n);
+
+                String localSum = reader.readLine();
+                System.out.println("Local sum: " + localSum);
             }
- 
- 
+
+            writer.println("done");
+
+            String globalSum = reader.readLine();
+            System.out.println("Global sum: " + globalSum);
+
         } catch (UnknownHostException ex) {
- 
             System.out.println("Server not found: " + ex.getMessage());
- 
         } catch (IOException ex) {
- 
             System.out.println("I/O error: " + ex.getMessage());
-        }catch (InterruptedException ex) {
- 
-            System.out.println("Interrupted error: " + ex.getMessage());
         }
     }
 }
