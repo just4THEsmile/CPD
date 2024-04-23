@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.locks.ReentrantLock;
+import Game;
 
 public class TimeServer {
     private static int globalSum = 0;
@@ -17,10 +18,18 @@ public class TimeServer {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server is listening on port " + port);
 
+            Socket socket1;
             while (true) {
-                Socket socket = serverSocket.accept();
-                new Thread(new ClientHandler(socket)).start();
+                socket1 = serverSocket.accept();
             }
+
+            Socket socket2;
+            while (true) {
+                socket2 = serverSocket.accept();
+            }
+
+            new Thread(new ClientHandler(socket1, socket2)).start();
+
 
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
@@ -29,10 +38,13 @@ public class TimeServer {
     }
 
     private static class ClientHandler implements Runnable {
-        private Socket socket;
+        private Socket socket1;
+        private Socket socket2;
 
-        public ClientHandler(Socket socket) {
-            this.socket = socket;
+
+        public ClientHandler(Socket socket1, Socket socket2) {
+            this.socket1 = socket1;
+            this.socket2 = socket2;
         }
 
         public void run() {
