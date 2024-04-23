@@ -1,100 +1,93 @@
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
- 
-/**
- * This program demonstrates a simple TCP/IP socket server.
- *
- * @author www.codejava.net
- */
+import Game;
 
+public class TimeServer {
+    private static int globalSum = 0;
+    private static ReentrantLock lock = new ReentrantLock();
 
+    public static void main(String[] args) {
+        if (args.length < 1) {
+            System.out.println("Usage: java TimeServer <port>");
+            return;
+        }
 
-public class TimeServer extends Thread{
-    static int total = 0;
-    int local = 0;
-    Socket socket;
-    static ReentrantLock lock;
+        int port = Integer.parseInt(args[0]);
 
-    public TimeServer(Socket socket, ReentrantLock lock) {
-        this.socket = socket;
-        this.lock = lock;
-    }
-    public int  get_Total(){
-        return total;
-    }
-    public int get_finish_value(){
-        return local;
-    }
-    public Socket get_Socket(){
-        return socket;
-    }
-    @Override
-    public void run(){
-        int value = 0;
-        try {
-            System.out.println("New client connected: "+ socket.getPort());
-            while(socket != null){
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server is listening on port " + port);
 
-                InputStream input = socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-                
-                String time = reader.readLine();
-                if (time != null) {
-                    value += Integer.parseInt(time);
-                    
-
-                    OutputStream output = socket.getOutputStream();
-                    PrintWriter writer = new PrintWriter(output, true);
-
-                    writer.println(value);
-                }else{
-                    
-                    socket.close();
-                    socket = null;
-                }
+            Socket socket1;
+            while (true) {
+                socket1 = serverSocket.accept();
             }
+
+            Socket socket2;
+            while (true) {
+                socket2 = serverSocket.accept();
+            }
+
+            new Thread(new ClientHandler(socket1, socket2)).start();
+
+
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
             ex.printStackTrace();
         }
-        System.out.println("total"+total);
-        System.out.println("total"+value);
-        lock.lock();
-        total += value;
-        lock.unlock();
-        System.out.println("total"+total);
-        System.err.println("Thread running");
     }
- 
-    public static void main(String[] args) {
-        if (args.length < 1) return;
-        ReentrantLock lock = new ReentrantLock();
-        int port = Integer.parseInt(args[0]);
-        ArrayList<TimeServer> threads = new ArrayList<TimeServer>();
-        try (ServerSocket serverSocket = new ServerSocket(port)) {
- 
-            System.out.println("Server is listening on port " + port);
-            Socket socket = null;
-            while (true) {
 
-                while (socket == null) {
-                    socket = serverSocket.accept();
-                    TimeServer thread= new TimeServer(socket,lock);
-                    threads.add(thread);
-                    thread.start();
-                    socket=null;
+    private static class ClientHandler implements Runnable {
+        private Socket socket1;
+        private Socket socket2;
+
+
+        public ClientHandler(Socket socket1, Socket socket2) {
+            this.socket1 = socket1;
+            this.socket2 = socket2;
+        }
+
+        public void run() {
+            int localSum = 0;
+
+            try (
+                InputStream input = socket.getInputStream();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                OutputStream output = socket.getOutputStream();
+                PrintWriter writer = new PrintWriter(output, true);
+            ) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.equals("done")) {
+                        break; // Exit the loop if "done" signal received
+                    }
+                    int num = Integer.parseInt(line);
+                    localSum += num;
+                    writer.println(localSum);
                 }
 
-                
+                updateGlobalSum(localSum);
+                writer.println(globalSum);
 
+            } catch (IOException ex) {
+                System.out.println("I/O error: " + ex.getMessage());
+                ex.printStackTrace();
+            } finally {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    System.out.println("Error closing socket: " + e.getMessage());
+                }
             }
- 
-        } catch (IOException ex) {
-            System.out.println("Server exception: " + ex.getMessage());
-            ex.printStackTrace();
+        }
+
+        private void updateGlobalSum(int num) {
+            lock.lock();
+            try {
+                globalSum += num;
+            } finally {
+                lock.unlock();
+            }
         }
     }
 }
