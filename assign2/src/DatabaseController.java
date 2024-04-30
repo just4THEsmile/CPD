@@ -196,6 +196,9 @@ public class DatabaseController
                 return -1;
             }
             return rs.getInt("score");
+        }catch(SQLException e){
+            e.printStackTrace();
+            return -1;
         }
 
     }

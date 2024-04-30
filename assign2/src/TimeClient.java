@@ -1,4 +1,3 @@
-import java.net.*;
 import java.io.*;
  
 /**
@@ -6,24 +5,29 @@ import java.io.*;
  *
  * @author www.codejava.net
  */
-enum State{
-    START,
-    LOGIN,
-    REGISTER,
-    LOGOUT,
-    Exit,
-    GAME_SELECTION,
-    PLAYING,
 
-}
+import java.net.*;
+import java.util.Scanner;
+
 public class TimeClient {
- 
+    enum State{
+        START,
+        LOGIN,
+        REGISTER,
+        LOGOUT,
+        Exit,
+        GAME_SELECTION,
+        PLAYING,
+    }
     public static void main(String[] args) {
-        if (args.length < 2) return;
- 
+        if (args.length < 2) {
+            System.out.println("Usage: java TimeClient <hostname> <port>");
+            return;
+        }
+
         String hostname = args[0];
         int port = Integer.parseInt(args[1]);
-        System.out.println("Connected to the server...");
+
         try (Socket socket = new Socket(hostname, port)) {
 
             State state = State.START;
@@ -114,6 +118,7 @@ public class TimeClient {
 
                         output = socket.getOutputStream();
                         writer = new PrintWriter(output, true);
+                        writer.println("GAME_SELECTION");
                         switch (option) {
                             case "1":
                                 System.out.println("----------------------");
@@ -121,8 +126,19 @@ public class TimeClient {
                                 System.out.println("Waiting for opponents");
                                 System.out.println("----------------------");
                                 writer.println("CASUAL");
-                                
-                                state = State.PLAYING;
+                                while(!reader.ready()){
+                                    reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                                }
+
+                                response = reader.readLine();
+                                System.out.println("response");
+                                System.out.println(response);
+                                if(response.equals("GAME_FOUND")){
+                                    System.out.println("----------------------");
+                                    System.out.println("Found a game!");
+                                    System.out.println("----------------------");
+                                    state = State.PLAYING;
+                                }
                                 break;
                             case "2":
                                 System.out.println("----------------------");
@@ -130,8 +146,16 @@ public class TimeClient {
                                 System.out.println("Waiting for opponents");
                                 System.out.println("----------------------");
                                 writer.println("RANKED");
+                                while(!reader.ready()){
+                                    reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                                }
+                                if(reader.readLine().equals("GAME_FOUND")){
+                                    System.out.println("----------------------");
+                                    System.out.println("Found a game!");
+                                    System.out.println("----------------------");
+                                    state = State.PLAYING;
+                                }
                                 
-                                state = State.PLAYING;
                                 break;
                             case "3":
                                 state = State.Exit;
@@ -139,6 +163,28 @@ public class TimeClient {
                             default:
                                 break;
                         }
+                        break;
+                    case PLAYING:
+                        System.out.println("----------------------");
+                        System.out.println("Playing game");
+                        System.out.println("----------------------");
+                        output = socket.getOutputStream();
+                        writer = new PrintWriter(output, true);
+                        input = socket.getInputStream();
+                        reader = new BufferedReader(new InputStreamReader(input));
+                        Scanner scanner = new Scanner(System.in);
+                        while (true) {
+                            String line = reader.readLine();
+                            if (line.equals("Your turn to guess a letter!")) {
+                                System.out.println("----------------------");
+                                System.out.print("Your turn to guess!\nGuess a letter or word:");
+                                System.out.println("----------------------");
+                                String guess = scanner.next();
+                                writer.println(guess);
+                            } else {
+                                System.out.println(line);
+                            }
+                        }  
                 
                     default:
                         break;
@@ -153,26 +199,29 @@ public class TimeClient {
                 InputStream input = socket.getInputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-                System.out.println("Received value: " + i*2);
-            
-                writer.println(i*2);
-                
-
-    
-                String time = reader.readLine();
-
                 System.out.println(time);
                 
                 Thread.sleep(1000);
             } */
  
  
+
+            /*
+            for (int i = 0; i < 5; i++) {
+                System.out.print("Enter an int: ");
+                int n = scanner.nextInt();
+                writer.println(n);
+
+                String localSum = reader.readLine();
+                System.out.println("Local sum: " + localSum);
+            }
+
+            String globalSum = reader.readLine();
+            System.out.println("Global sum: " + globalSum);
+            */
         } catch (UnknownHostException ex) {
- 
             System.out.println("Server not found: " + ex.getMessage());
- 
         } catch (IOException ex) {
- 
             System.out.println("I/O error: " + ex.getMessage());
         }
     }
