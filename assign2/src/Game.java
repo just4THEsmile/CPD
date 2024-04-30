@@ -8,14 +8,16 @@ import java.util.Random;
 enum RoundResult {
     GUESSLETTER,
     GUESSWORD,
-    FAILEDGUESS
+    FAILEDGUESS,
+    INVALIDGUESS
 }
+
 public class Game {
     private List<Socket> userSockets;
     private String secretWord;
     private StringBuilder currentGuess;
     private int currentPlayerIndex;
-    private List<int> playerScores;
+    private List<Integer> playerScores;
 
     public Game(int players, List<Socket> userSockets) {
         this.userSockets = userSockets;
@@ -45,7 +47,7 @@ public class Game {
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
                 writer.println("Starting Hangman game!");
                 writer.println("The word has " + secretWord.length() + " letters.");
-                writer.println("Current word: " + initialGuess.toString());
+                writer.println("Current word: " + currentGuess.toString());
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -69,7 +71,7 @@ public class Game {
 
     public void playRound() {
         // Code to play a round of the game
-        System.out.println("Playing round for player " + currentPlayerIndex);
+        System.out.println("Playing round for player " + (currentPlayerIndex + 1));
 
         // Get the current player's socket
         Socket currentPlayerSocket = userSockets.get(currentPlayerIndex);
@@ -77,9 +79,9 @@ public class Game {
         // Receive the guess from the current player
         String guess = receiveGuess(currentPlayerSocket);
 
-        RoundResult result;
+        RoundResult result = RoundResult.INVALIDGUESS;
         // Update the current word guesses based on the guess
-        int numOccurrences;
+        int numOccurrences = -1;
         if (guess.length() == 1) {
             numOccurrences = guessLetter(guess);
             result = numOccurrences > 0 ? RoundResult.GUESSLETTER : RoundResult.FAILEDGUESS;
@@ -96,15 +98,18 @@ public class Game {
                 PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
                 switch (result) {
                     case GUESSLETTER:
-                        writer.println("Player " + currentPlayerIndex + " guessed: " + guess);
-                        writer.println("Current word: " + currentWordGuesses.get(currentWordGuesses.size() - 1));
+                        writer.println("Player " + (currentPlayerIndex + 1) + " guessed: " + guess);
+                        writer.println("Current word: " + currentGuess);
                         break;
                     case GUESSWORD:
-                        writer.println("Player " + currentPlayerIndex + " guessed the word: " + guess);
-                        writer.println("Current word: " + currentWordGuesses.get(currentWordGuesses.size() - 1));
+                        writer.println("Player " + (currentPlayerIndex + 1) + " guessed the word: " + guess);
+                        writer.println("Current word: " + currentGuess);
                         break;
                     case FAILEDGUESS:
-                        writer.println("Player " + currentPlayerIndex + " guessed: " + guess + " - Incorrect guess!");
+                        writer.println("Player " + (currentPlayerIndex + 1) + " guessed: " + guess + " - Incorrect guess!");
+                        break;
+                    case INVALIDGUESS:
+                        writer.println("Invalid guess: " + guess);
                         break;
                 }
             } catch (IOException e) {
@@ -140,7 +145,7 @@ public class Game {
         int counter = 0;
 
         for (int i = 0; i < secretWord.length(); i++) {
-            if (secretWord.charAt(i) == guess.charAt(0) && updatedGuess.charAt(i) == '_'{
+            if (secretWord.charAt(i) == guess.charAt(0) && updatedGuess.charAt(i) == '_') {
                 updatedGuess.setCharAt(i, guess.charAt(0));
                 counter++;
             }
@@ -153,9 +158,13 @@ public class Game {
         // Code to check if the guess is the secret word
         if (secretWord.equals(guess)) {
             currentGuess = new StringBuilder(secretWord);
-            return currentGuess.toString().chars().filter(ch -> ch == '_').count();
+            return (int) currentGuess.toString().chars().filter(ch -> ch == '_').count();
         } else {
             return 0;
         }
+    }
+
+    public int getScore(int playerIndex) {
+        return playerScores.get(playerIndex);
     }
 }

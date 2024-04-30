@@ -1,11 +1,14 @@
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.locks.ReentrantLock;
-import Game;
+import java.util.List;
+import java.util.ArrayList;
+
 
 public class TimeServer {
     private static int globalSum = 0;
     private static ReentrantLock lock = new ReentrantLock();
+
 
     public static void main(String[] args) {
         if (args.length < 1) {
@@ -18,19 +21,16 @@ public class TimeServer {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server is listening on port " + port);
 
-            Socket socket1;
-            while (true) {
-                socket1 = serverSocket.accept();
+            List<Socket> userSockets = new ArrayList<>();
+
+            while (true) { // Wait for 2 players to connect
+                Socket socket = serverSocket.accept();
+                userSockets.add(socket);
+                if (userSockets.size() == 2) { // Start a new game after 2 players have connected
+                    new Thread(new ClientHandler(userSockets)).start();
+                    userSockets.clear();
+                }
             }
-
-            Socket socket2;
-            while (true) {
-                socket2 = serverSocket.accept();
-            }
-
-            new Thread(new ClientHandler(socket1, socket2)).start();
-
-
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
             ex.printStackTrace();
@@ -38,55 +38,26 @@ public class TimeServer {
     }
 
     private static class ClientHandler implements Runnable {
-        private Socket socket1;
-        private Socket socket2;
+        List<Socket> userSockets;
 
-
-        public ClientHandler(Socket socket1, Socket socket2) {
-            this.socket1 = socket1;
-            this.socket2 = socket2;
+        public ClientHandler(List<Socket> userSockets) {
+            this.userSockets = new ArrayList<>(userSockets);
         }
 
         public void run() {
-            int localSum = 0;
+            // Start the game
+            Game game = new Game(userSockets.size(), userSockets);
+            game.start();
 
-            try (
-                InputStream input = socket.getInputStream();
-                BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-                OutputStream output = socket.getOutputStream();
-                PrintWriter writer = new PrintWriter(output, true);
-            ) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    if (line.equals("done")) {
-                        break; // Exit the loop if "done" signal received
-                    }
-                    int num = Integer.parseInt(line);
-                    localSum += num;
-                    writer.println(localSum);
-                }
-
-                updateGlobalSum(localSum);
-                writer.println(globalSum);
-
-            } catch (IOException ex) {
-                System.out.println("I/O error: " + ex.getMessage());
-                ex.printStackTrace();
-            } finally {
+            // Print user scores
+            for (int i = 0; i < userSockets.size(); i++) {
                 try {
-                    socket.close();
+                    Socket socket = userSockets.get(i);
+                    PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+                    writer.println("Game over! Your score: " + game.getScore(i));
                 } catch (IOException e) {
-                    System.out.println("Error closing socket: " + e.getMessage());
+                    e.printStackTrace();
                 }
-            }
-        }
-
-        private void updateGlobalSum(int num) {
-            lock.lock();
-            try {
-                globalSum += num;
-            } finally {
-                lock.unlock();
             }
         }
     }
