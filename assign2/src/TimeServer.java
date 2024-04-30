@@ -3,6 +3,15 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
+
+import javax.xml.crypto.Data;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
  
 /**
  * This program demonstrates a simple TCP/IP socket server.
@@ -17,6 +26,9 @@ public class TimeServer extends Thread{
     int local = 0;
     Socket socket;
     static ReentrantLock lock;
+    static ArrayList<Integer> queue_casual;
+    static ArrayList<ArrayList<Integer>> queue_ranked;
+    static DatabaseController db ;
 
     public TimeServer(Socket socket, ReentrantLock lock) {
         this.socket = socket;
@@ -41,15 +53,92 @@ public class TimeServer extends Thread{
                 InputStream input = socket.getInputStream();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(input));
                 
-                String time = reader.readLine();
-                if (time != null) {
+                String in = reader.readLine();
+                if (in != null) {/* 
                     value += Integer.parseInt(time);
                     
 
                     OutputStream output = socket.getOutputStream();
                     PrintWriter writer = new PrintWriter(output, true);
 
-                    writer.println(value);
+                    writer.println(value);*/
+                    int player_id=0;
+                    switch (in) {
+                        case "LOGIN":
+                            String username = reader.readLine();
+                            String password = reader.readLine();
+                            System.out.println("username: "+username);
+                            System.out.println("password: "+password);
+                            player_id = db.login(username, password);
+                            if(player_id!=-1){
+                                System.out.println("----------------------");
+                                System.out.println("\033[32mLogin success \033[30m");
+                                System.out.println("----------------------");
+                                OutputStream output = socket.getOutputStream();
+                                PrintWriter writer = new PrintWriter(output, true);
+                                writer.println("SUCCESS");
+                            }else{
+                                System.out.println("Login failed");
+                                OutputStream output = socket.getOutputStream();
+                                PrintWriter writer = new PrintWriter(output, true);
+                                writer.println("FAILED");
+                            }
+                            break;
+                        case "REGISTER":
+                            username = reader.readLine();
+                            password = reader.readLine();
+                            System.out.println("username: "+username);
+                            System.out.println("password: "+password);
+                            player_id = db.register(username, password);
+                            if(player_id != -1){
+                                System.out.println("Register success");
+                                OutputStream output = socket.getOutputStream();
+                                PrintWriter writer = new PrintWriter(output, true);
+                                writer.println("SUCCESS");
+                            }else{
+                                System.out.println("Register failed");
+                                OutputStream output = socket.getOutputStream();
+                                PrintWriter writer = new PrintWriter(output, true);
+                                writer.println("FAILED");
+                            }
+                            break;
+                        case "LOGOUT":
+                            System.out.println("Logout");
+                            socket.close();
+                            socket = null;
+                            break;
+                        case "Exit":
+                            System.out.println("Exit");
+                            socket.close();
+                            socket = null;
+                            break;
+                        case "GAME_SELECTION":
+                            System.out.println("Game selection");
+                            String game = reader.readLine();
+                            System.out.println("Game: "+game);
+                            if(game.equals("CASUAL")){
+                                System.out.println("Casual");
+                                this.queue_casual.add(socket.getPort());
+
+
+                            }else if(game.equals("RANKED")){
+                                System.out.println("Ranked");
+                                int score=this.db.getScore(player_id);
+                                
+                                ArrayList<Integer> temp= new ArrayList<Integer>();
+                                temp.add(socket.getPort());
+                                temp.add(score);
+                                this.queue_ranked.add(temp);
+
+                            }
+                            break;
+                        case "PLAYING":
+                            System.out.println("Playing");
+                            break;
+                        default:
+                            break;
+                    }
+
                 }else{
                     
                     socket.close();
@@ -70,6 +159,9 @@ public class TimeServer extends Thread{
     }
  
     public static void main(String[] args) {
+        System.out.println("Server is running");
+        db = new DatabaseController();
+    //------------------------------------------------------- DATABASE CONNECTION
         if (args.length < 1) return;
         ReentrantLock lock = new ReentrantLock();
         int port = Integer.parseInt(args[0]);
@@ -87,11 +179,8 @@ public class TimeServer extends Thread{
                     thread.start();
                     socket=null;
                 }
-
-                
-
             }
- 
+
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
             ex.printStackTrace();
