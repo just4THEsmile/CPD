@@ -101,7 +101,7 @@ public class TimeClient {
                         response = server_reader.readLine();
                         if(response.equals("SUCCESS")){
                             System.out.println("Registration successful");
-                            state = State.LOGIN;
+                            state = State.START;
                         }else{
                             System.out.println("Registration failed username already exists");
                             System.out.println("Please try again");
@@ -177,7 +177,7 @@ public class TimeClient {
                             String line = reader.readLine();
                             if (line.equals("Your turn to guess a letter!")) {
                                 System.out.println("----------------------");
-                                System.out.print("Your turn to guess!\nGuess a letter or word:");
+                                System.out.print("Your turn to guess!\nGuess a letter or word:\n");
                                 System.out.println("----------------------");
                                 String guess = scanner.next();
                                 writer.println(guess);
