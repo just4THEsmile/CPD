@@ -107,6 +107,7 @@ public class Game {
                         break;
                     case FAILEDGUESS:
                         writer.println("Player " + (currentPlayerIndex + 1) + " guessed: " + guess + " - Incorrect guess!");
+                        writer.println("Current word: " + currentGuess);
                         break;
                     case INVALIDGUESS:
                         writer.println("Invalid guess: " + guess);
