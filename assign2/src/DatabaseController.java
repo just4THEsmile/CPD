@@ -11,11 +11,8 @@ public class DatabaseController
     private static Connection connection;
     private static Statement statement;
 
-    public DatabaseController(){
-        
-        
-        try
-        {   
+    public DatabaseController() {
+        try {
             this.connection = DriverManager.getConnection("jdbc:sqlite:sample.db");
             this.statement = this.connection.createStatement();
             statement.setQueryTimeout(30);  // set timeout to 30 sec.
@@ -24,20 +21,18 @@ public class DatabaseController
             System.out.println("------------");
             System.out.println("----test_db----");
             System.out.println("------------");
-            while(rs.next())
-            {
-            // read the result set
-            System.out.println("name = " + rs.getString("name"));
-            System.out.println("password = " + rs.getString("password"));
-            System.out.println("id= " + rs.getInt("id"));
-            System.out.println("score = " + rs.getString("score"));
-                    }
+            while(rs.next()) {
+                // read the result set
+                System.out.println("name = " + rs.getString("name"));
+                System.out.println("password = " + rs.getString("password"));
+                System.out.println("id= " + rs.getInt("id"));
+                System.out.println("score = " + rs.getString("score"));
+            }
             System.out.println("------------");
             System.out.println("----test_db----");
             System.out.println("------------");
         }
-        catch(SQLException e)
-        {
+        catch(SQLException e) {
             // if the error message is "out of memory",
             // it probably means no database file is found
             System.out.println("bruhh1");
@@ -53,42 +48,42 @@ public class DatabaseController
         return statement;
     }
     public static void closeConnection(){
-        try{
+        try {
             connection.close();
-        }catch(SQLException e){
+        } catch(SQLException e) {
             e.printStackTrace();
         }
     }
 
     public static int createGame(List <String> players){
         int max_game_id = 0;
-        try{
+        try {
             ResultSet rs = statement.executeQuery("SELECT MAX(game_id) AS max_game_id FROM game");
             max_game_id = rs.getInt("max_person_id");
             max_game_id++;
             statement.executeUpdate("insert into game values("+max_game_id+")");
-            for(String player: players){
+            for(String player: players) {
                 rs = statement.executeQuery("SELECT MAX(id)  FROM person where name = "+player+";");
                 int person_id = rs.getInt("id");
                 statement.executeUpdate("insert into game_person values("+max_game_id+", "+person_id+")");
             }
-        }catch(SQLException e){
+        } catch(SQLException e) {
             e.printStackTrace();
         }
         return max_game_id;
     }
 
-    public static void deleteGame(int game_id){
-        try{
+    public static void deleteGame(int game_id) {
+        try {
             statement.executeUpdate("delete from game where game_id = "+game_id+";");
             statement.executeUpdate("delete from game_person where game_id = "+game_id+";");
-        }catch(SQLException e){
+        } catch(SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public static void addPlayer(String player, String password){
-        try{
+    public static void addPlayer(String player, String password) {
+        try {
             ResultSet rs = statement.executeQuery("SELECT MAX(id) AS max_person_id FROM person;");
             int person_id = rs.getInt("max_person_id");
             person_id++;
@@ -100,7 +95,7 @@ public class DatabaseController
             statement.setInt(4, 0);
             statement.executeUpdate();
 
-        }catch(SQLException e){
+        } catch(SQLException e) {
             e.printStackTrace();
         }
     }
@@ -158,7 +153,7 @@ public class DatabaseController
             return rs.getInt("game_id");
         }catch(SQLException e){
             e.printStackTrace();
-    }
+        }
         return -1;
     }
 
@@ -208,12 +203,12 @@ public class DatabaseController
     public static void main(String[] args)
     {
         try
-        {   
-            
+        {
+
             connection = DriverManager.getConnection("jdbc:sqlite:sample.db");
             statement = connection.createStatement();
             statement.setQueryTimeout(30);  // set timeout to 30 sec.
-    
+
             statement.executeUpdate("drop table if exists person");
             statement.executeUpdate("drop table if exists game");
             statement.executeUpdate("drop table if exists game_person");
@@ -221,7 +216,7 @@ public class DatabaseController
             statement.executeUpdate("create table game (game_id integer primary key)");
             statement.executeUpdate("create table game_person (game_id integer, person_id integer, primary key (game_id, person_id))");
             statement.executeUpdate("create table person (id integer primary key autoincrement, name string, password string, score integer)");
-            
+
             ResultSet rs = statement.executeQuery("SELECT MAX(id) AS max_person_id FROM person;");
 
             statement.executeUpdate("insert into person values(0 ,'admin',1234, 0)");
@@ -230,10 +225,10 @@ public class DatabaseController
             rs = statement.executeQuery("select * from person");
             while(rs.next())
             {
-            // read the result set
-            System.out.println("name = " + rs.getString("name"));
-            System.out.println("id = " + rs.getInt("id"));
-            System.out.println("score = " + rs.getString("score"));
+                // read the result set
+                System.out.println("name = " + rs.getString("name"));
+                System.out.println("id = " + rs.getInt("id"));
+                System.out.println("score = " + rs.getString("score"));
             }
         }
         catch(SQLException e)

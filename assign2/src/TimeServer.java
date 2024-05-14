@@ -20,9 +20,6 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.ArrayList;
 
-
-
-
 public class TimeServer extends Thread{
     private static int globalSum = 0;
     private ReentrantLock lock = new ReentrantLock();
@@ -131,7 +128,7 @@ public class TimeServer extends Thread{
                                 System.out.println("Ranked");
                                 int score=db.getScore(player_id);
                                 
-                                MyPair<Socket,Integer> temp= new  MyPair(socket,score);
+                                MyPair<Socket,Integer> temp = new MyPair<>(socket,score);
                                 queue_ranked.add(temp);
                                 System.out.println("queue"+queue_casual.size());
                                 System.out.println("queue"+queue_ranked.size());
@@ -188,11 +185,11 @@ public class TimeServer extends Thread{
             while (true) {
 
                 socket = serverSocket.accept();
-                TimeServer thread= new TimeServer(socket,lock);
+                TimeServer thread = new TimeServer(socket,lock);
 
                 threads.add(thread);
                 thread.start();
-                socket=null;
+                socket = null;
 
                 // caual game
                 if (queue_casual.size() >= 2) { // Start a new game after 2 players have connected
@@ -301,14 +298,14 @@ public class TimeServer extends Thread{
             System.out.println("Socket"+userSockets.get(0));
             System.out.println("Socket"+userSockets.get(1));
             // Notify the clients that the game has started
-            try{
-            OutputStream out=((Socket)(userSockets.get(0))).getOutputStream();
-            PrintWriter writer = new PrintWriter(out, true);
-            writer.println("GAME_FOUND");
-            out=((Socket)(userSockets.get(1))).getOutputStream();
-            writer = new PrintWriter(out, true);
-            writer.println("GAME_FOUND");
-            }catch(IOException e){
+            try {
+                OutputStream out=((Socket)(userSockets.get(0))).getOutputStream();
+                PrintWriter writer = new PrintWriter(out, true);
+                writer.println("GAME_FOUND");
+                out=((Socket)(userSockets.get(1))).getOutputStream();
+                writer = new PrintWriter(out, true);
+                writer.println("GAME_FOUND");
+            } catch(IOException e) {
                 e.printStackTrace();
             }
 

@@ -177,7 +177,7 @@ public class TimeClient {
                             String line = reader.readLine();
                             if (line.equals("Your turn to guess a letter!")) {
                                 System.out.println("----------------------");
-                                System.out.print("Your turn to guess!\nGuess a letter or word:");
+                                System.out.println("Your turn to guess!\nGuess a letter or word:");
                                 System.out.println("----------------------");
                                 String guess = scanner.next();
                                 writer.println(guess);
