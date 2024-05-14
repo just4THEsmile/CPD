@@ -21,25 +21,11 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class TimeServer extends Thread {
-    private static int globalSum = 0;
     private static ReentrantLock lock = new ReentrantLock();
-    static int total = 0;
-    int local = 0;
-    Socket socket;
     static ArrayList<Socket> queue_casual = new ArrayList<>();
-    static ArrayList<MyPair<Socket,Integer>> queue_ranked= new ArrayList<>();
+    static ArrayList<MyPair<Socket,Integer>> queue_ranked = new ArrayList<>();
     static DatabaseController db;
 
-    public int get_Total(){
-        return total;
-    }
-    public int get_finish_value(){
-        return local;
-    }
-    public Socket get_Socket(){
-        return socket;
-    }
- 
     public static void main(String[] args) {
         System.out.println("Server is running");
         db = new DatabaseController();
@@ -54,21 +40,16 @@ public class TimeServer extends Thread {
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("Server is listening on port " + port);
 
-            Socket socket = null;
-
             new Thread(new QueueHandler()).start();
 
+            Socket socket;
             while (true) { // Receive new players
                 socket = serverSocket.accept();
                 new Thread(new PlayerHandler(socket)).start();
 
-                socket = null;
-
-                System.out.println("queue_caual.size() " + queue_casual.size());
-                System.out.println("queue_ranked.size() " + queue_ranked.size());
-
+                /*System.out.println("queue_caual.size() " + queue_casual.size());
+                System.out.println("queue_ranked.size() " + queue_ranked.size());*/
             }
-
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
             ex.printStackTrace();
@@ -85,8 +66,7 @@ public class TimeServer extends Thread {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                //System.out.println("queue_caual.size()"+queue_casual.size());
-                //System.out.println("queue_ranked.size()"+queue_ranked.size());
+
                 if (queue_casual.size() >= 2) { // Start a new game after 2 players have connected
                     // get the first 2 values from the queue
                     ArrayList <Socket> temp = new ArrayList<Socket>();
@@ -109,15 +89,16 @@ public class TimeServer extends Thread {
                         MyPair pair_2 = queue_ranked.get(i + 1);
 
                         if(Math.abs((Integer) pair_1.getValue() - (Integer) pair_2.getValue()) < waiting_time_ranked){
-                            if (queue_ranked.size() ==2){
-                                waiting_time_ranked=0;
-                            }
-
                             ArrayList <Socket> temp = new ArrayList<Socket>();
                             temp.add((Socket)pair_1.getKey());
                             temp.add((Socket)pair_2.getKey());
                             queue_ranked.remove(pair_1);
                             queue_ranked.remove(pair_2);
+
+                            if (queue_ranked.empty()) {
+                                waiting_time_ranked = 0;
+                            }
+
                             new Thread(new GameHandler(temp)).start();
                         }
                     }
@@ -236,13 +217,11 @@ public class TimeServer extends Thread {
                 System.out.println("Server exception: " + ex.getMessage());
                 ex.printStackTrace();
             }
-            System.out.println("total"+total);
-            System.out.println("total"+value);
+
             lock.lock();
             System.out.println("queue"+queue_casual.size());
             System.out.println("queue"+queue_ranked.size());
             lock.unlock();
-            System.out.println("total"+total);
             System.err.println("Thread running");
         }
     }
@@ -257,14 +236,14 @@ public class TimeServer extends Thread {
         public void run() {
             // Start the game
             System.out.println("Starting game with " + userSockets.size() + " players");
-            System.out.println("Socket"+userSockets.get(0));
-            System.out.println("Socket"+userSockets.get(1));
+            System.out.println("Socket" + userSockets.get(0));
+            System.out.println("Socket" + userSockets.get(1));
             // Notify the clients that the game has started
             try {
                 OutputStream out=((Socket)(userSockets.get(0))).getOutputStream();
                 PrintWriter writer = new PrintWriter(out, true);
                 writer.println("GAME_FOUND");
-                out=((Socket)(userSockets.get(1))).getOutputStream();
+                out = ((Socket)(userSockets.get(1))).getOutputStream();
                 writer = new PrintWriter(out, true);
                 writer.println("GAME_FOUND");
             } catch(IOException e) {
