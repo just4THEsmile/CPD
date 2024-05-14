@@ -218,10 +218,8 @@ public class TimeServer extends Thread {
                 ex.printStackTrace();
             }
 
-            lock.lock();
             System.out.println("queue"+queue_casual.size());
             System.out.println("queue"+queue_ranked.size());
-            lock.unlock();
             System.err.println("Thread running");
         }
     }
