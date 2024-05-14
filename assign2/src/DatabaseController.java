@@ -177,7 +177,7 @@ public class DatabaseController
         return null;
     }
 
-    public static int get_game_from_user(int player){
+    public static int get_game_from_user(int player) {
         try{
             String sqlString = "select game_id from game_person where person_id = ?;";
             PreparedStatement statement = connection.prepareStatement(sqlString);
@@ -189,7 +189,7 @@ public class DatabaseController
             }
             System.out.println("playing an game");
             return rs.getInt("game_id");
-        }catch(SQLException e){
+        } catch(SQLException e) {
             e.printStackTrace();
         }
         return -1;

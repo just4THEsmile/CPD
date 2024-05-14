@@ -269,11 +269,18 @@ public class TimeServer extends Thread {
                     InputStream input = socket.getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-                    writer.println("Game over! Your score: " + game.getScore(i));
+                    int player_score = game.getScore(i);
+
+                    writer.println("Game over! Your score: " + player_score);
                     writer.println("GAME_OVER");
 
                     String player_id_string = reader.readLine();
                     int player_id = Integer.parseInt(player_id_string);
+
+                    lock.lock();
+                    db.updateScore(player_id, db.getScore(player_id) + player_score);
+                    lock.unlock();
+
                     new Thread(new PlayerHandler(socket, player_id)).start();
                 } catch (IOException e) {
                     e.printStackTrace();
