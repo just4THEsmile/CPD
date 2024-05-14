@@ -211,20 +211,21 @@ public class TimeServer extends Thread{
 
                 if (queue_ranked.size() >= 2) { // Start a new game after 2 players have connected
                     // get the first 2 values from the queue
-                    for (MyPair pair_1 : queue_ranked){
-                        for (MyPair pair_2 : queue_ranked){
-                            if(Math.abs((Integer)pair_1.getValue() - (Integer)pair_2.getValue()) < waiting_time_ranked){
-                                if (queue_ranked.size() ==2){
-                                    waiting_time_ranked=0;
-                                }
-                                ArrayList <Socket> temp = new ArrayList<Socket>();
-                                temp.add((Socket)pair_1.getKey());
-                                temp.add((Socket)pair_2.getKey());
-                                queue_ranked.remove(pair_1);
-                                queue_ranked.remove(pair_2);
-                                new Thread(new ClientHandler(temp)).start();
+                    for (int i = 0; i < queue_ranked.size() - 1; i++) {
+                        MyPair pair_1 = queue_ranked.get(i);
+                        MyPair pair_2 = queue_ranked.get(i + 1);
 
+                        if(Math.abs((Integer)pair_1.getValue() - (Integer)pair_2.getValue()) < waiting_time_ranked){
+                            if (queue_ranked.size() ==2){
+                                waiting_time_ranked=0;
                             }
+                            ArrayList <Socket> temp = new ArrayList<Socket>();
+                            temp.add((Socket)pair_1.getKey());
+                            temp.add((Socket)pair_2.getKey());
+                            queue_ranked.remove(pair_1);
+                            queue_ranked.remove(pair_2);
+                            new Thread(new ClientHandler(temp)).start();
+
                         }
                     }
                 }
