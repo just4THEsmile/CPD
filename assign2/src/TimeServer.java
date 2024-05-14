@@ -95,7 +95,7 @@ public class TimeServer extends Thread {
                             queue_ranked.remove(pair_1);
                             queue_ranked.remove(pair_2);
 
-                            if (queue_ranked.empty()) {
+                            if (queue_ranked.isEmpty()) {
                                 waiting_time_ranked = 0;
                             }
 

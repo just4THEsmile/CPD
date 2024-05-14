@@ -57,15 +57,38 @@ public class DatabaseController
 
     public static int createGame(List <String> players){
         int max_game_id = 0;
-        try {
-            ResultSet rs = statement.executeQuery("SELECT MAX(game_id) AS max_game_id FROM game");
-            max_game_id = rs.getInt("max_person_id");
-            max_game_id++;
-            statement.executeUpdate("insert into game values("+max_game_id+")");
-            for(String player: players) {
-                rs = statement.executeQuery("SELECT MAX(id)  FROM person where name = "+player+";");
-                int person_id = rs.getInt("id");
-                statement.executeUpdate("insert into game_person values("+max_game_id+", "+person_id+")");
+        try{
+            String sql = "SELECT MAX(game_id) AS max_game_id FROM game";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet rs= statement.executeQuery();
+            if(!rs.next()){
+                max_game_id = 0;
+            }else{
+                max_game_id = rs.getInt("max_game_id");
+                max_game_id++;
+            }
+            String sqlString = "insert into game values(?)";
+            statement = connection.prepareStatement(sqlString);
+            statement.setInt(1, max_game_id);
+            statement.executeUpdate();
+            for(String player: players){
+
+                String sqlString2 = "SELECT MAX(id) AS id FROM person where name = ?;";
+                PreparedStatement statement2 = connection.prepareStatement(sqlString2);
+                statement2.setString(1, player);
+                ResultSet rs2 = statement2.executeQuery();
+
+                if(!rs2.next()){
+                    System.out.println("ERROR");
+                    return -1;
+                }
+
+                int person_id = rs2.getInt("id");
+                String sqlString3 = "insert into game_person values(?, ?)";
+                PreparedStatement statement3 = connection.prepareStatement(sqlString3);
+                statement3.setInt(1, max_game_id);
+                statement3.setInt(2, person_id);
+                statement3.executeUpdate();
             }
         } catch(SQLException e) {
             e.printStackTrace();
@@ -73,11 +96,17 @@ public class DatabaseController
         return max_game_id;
     }
 
-    public static void deleteGame(int game_id) {
-        try {
-            statement.executeUpdate("delete from game where game_id = "+game_id+";");
-            statement.executeUpdate("delete from game_person where game_id = "+game_id+";");
-        } catch(SQLException e) {
+    public static void deleteGame(int game_id){
+        try{
+            String sql = "delete from game where game_id = ?;";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, game_id);
+            statement.executeUpdate();
+            sql = "delete from game_person where game_id = ?;";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, game_id);
+            statement.executeUpdate();
+        }catch(SQLException e){
             e.printStackTrace();
         }
     }
@@ -107,6 +136,7 @@ public class DatabaseController
             statement.setString(1, player);
             statement.setString(2, password);
             ResultSet rs = statement.executeQuery();
+            
             if(!rs.next()){
                 return -1;
             }
@@ -149,7 +179,15 @@ public class DatabaseController
 
     public static int get_game_from_user(int player){
         try{
-            ResultSet rs = statement.executeQuery("select game_id from game_person where person_id = "+player+";");
+            String sqlString = "select game_id from game_person where person_id = ?;";
+            PreparedStatement statement = connection.prepareStatement(sqlString);
+            statement.setInt(1, player);
+            ResultSet rs = statement.executeQuery();
+            if(!rs.next()){
+                System.out.println("not playing any game");
+                return -1;
+            }
+            System.out.println("playing an game");
             return rs.getInt("game_id");
         }catch(SQLException e){
             e.printStackTrace();
