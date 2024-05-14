@@ -26,6 +26,8 @@ public class TimeClient {
             return;
         }
 
+        String player_id_string = null;
+
         String hostname = args[0];
         int port = Integer.parseInt(args[1]);
 
@@ -73,6 +75,7 @@ public class TimeClient {
                         writer.println("LOGIN");
                         writer.println(username);
                         writer.println(password);
+                        player_id_string = reader.readLine();
                         String response = reader.readLine();
 
                         if (response.equals("SUCCESS")) {
@@ -173,11 +176,19 @@ public class TimeClient {
                                 System.out.println("----------------------");
                                 String guess = scanner.next();
                                 writer.println(guess);
-                            } else {
+                            } else if (line.equals("GAME_OVER")) {
+                                state = State.GAME_OVER;
+                                break;
+                            }
+                            else {
                                 System.out.println(line);
                             }
                         }
-
+                    case GAME_OVER:
+                        System.out.println("Game over! frfr no cap");
+                        writer.println(player_id_string); // send player id to game server for reconnecting
+                        state = State.GAME_SELECTION;
+                        break;
                     default:
                         break;
                 }

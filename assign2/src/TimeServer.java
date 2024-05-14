@@ -78,7 +78,7 @@ public class TimeServer extends Thread {
                 }
 
                 // ranked game timeout
-                if(queue_ranked.size() > 0) {
+                if (queue_ranked.size() > 0) {
                     waiting_time_ranked += 20;
                 }
 
@@ -109,22 +109,38 @@ public class TimeServer extends Thread {
 
     private static class PlayerHandler implements Runnable {
         private Socket socket;
+        private int player_id;
+        private boolean isConnected = false;
 
         public PlayerHandler(Socket socket) {
             this.socket = socket;
+            this.player_id = -1;
+        }
+
+        public PlayerHandler(Socket socket, int player_id) {
+            this.socket = socket;
+            this.player_id = player_id;
+            this.isConnected = true;
         }
 
         public void run() {
-            int value = 0;
             try {
                 System.out.println("New client connected: "+ socket.getPort());
-                while(socket != null) {
+                while (socket != null) {
                     InputStream input = socket.getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
-                    String line = reader.readLine();
+                    OutputStream output = socket.getOutputStream();
+                    PrintWriter writer = new PrintWriter(output, true);
+
+                    String line;
+                    if (isConnected) { // Skip login if the player is already connected
+                        line = "GAME_SELECTION";
+                    } else {
+                        line = reader.readLine();
+                    }
+
                     if (line != null) {
-                        int player_id = 0;
                         switch (line) {
                             case "LOGIN":
                                 String username = reader.readLine();
@@ -132,18 +148,15 @@ public class TimeServer extends Thread {
                                 System.out.println("username: " + username);
                                 System.out.println("password: " + password);
                                 player_id = db.login(username, password);
+                                writer.println(player_id);
 
                                 if (player_id == -1) {
                                     System.out.println("Login failed");
-                                    OutputStream output = socket.getOutputStream();
-                                    PrintWriter writer = new PrintWriter(output, true);
                                     writer.println("FAILED");
                                 } else {
                                     System.out.println("----------------------");
                                     System.out.println("\033[32mLogin success \033[30m");
                                     System.out.println("----------------------");
-                                    OutputStream output = socket.getOutputStream();
-                                    PrintWriter writer = new PrintWriter(output, true);
                                     writer.println("SUCCESS");
                                 }
                                 break;
@@ -156,13 +169,9 @@ public class TimeServer extends Thread {
 
                                 if (player_id == -1) {
                                     System.out.println("Register failed");
-                                    OutputStream output = socket.getOutputStream();
-                                    PrintWriter writer = new PrintWriter(output, true);
                                     writer.println("FAILED");
                                 } else {
                                     System.out.println("Register success");
-                                    OutputStream output = socket.getOutputStream();
-                                    PrintWriter writer = new PrintWriter(output, true);
                                     writer.println("SUCCESS");
                                 }
                                 break;
@@ -237,13 +246,14 @@ public class TimeServer extends Thread {
             System.out.println("Socket" + userSockets.get(0));
             System.out.println("Socket" + userSockets.get(1));
             // Notify the clients that the game has started
+            PrintWriter writer;
+
             try {
-                OutputStream out=((Socket)(userSockets.get(0))).getOutputStream();
-                PrintWriter writer = new PrintWriter(out, true);
-                writer.println("GAME_FOUND");
-                out = ((Socket)(userSockets.get(1))).getOutputStream();
-                writer = new PrintWriter(out, true);
-                writer.println("GAME_FOUND");
+                for (int i = 0; i < userSockets.size(); i++) {
+                    Socket socket = userSockets.get(i);
+                    writer = new PrintWriter(socket.getOutputStream(), true);
+                    writer.println("GAME_FOUND");
+                }
             } catch(IOException e) {
                 e.printStackTrace();
             }
@@ -255,8 +265,16 @@ public class TimeServer extends Thread {
             for (int i = 0; i < userSockets.size(); i++) {
                 try {
                     Socket socket = userSockets.get(i);
-                    PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+                    writer = new PrintWriter(socket.getOutputStream(), true);
+                    InputStream input = socket.getInputStream();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+
                     writer.println("Game over! Your score: " + game.getScore(i));
+                    writer.println("GAME_OVER");
+
+                    String player_id_string = reader.readLine();
+                    int player_id = Integer.parseInt(player_id_string);
+                    new Thread(new PlayerHandler(socket, player_id)).start();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
