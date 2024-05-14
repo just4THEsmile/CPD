@@ -158,8 +158,9 @@ public class Game {
     private int guessWord(String guess) {
         // Code to check if the guess is the secret word
         if (secretWord.equals(guess)) {
-            currentGuess = new StringBuilder(secretWord);
-            return (int) currentGuess.toString().chars().filter(ch -> ch == '_').count();
+            int n = (int) currentGuess.toString().chars().filter(ch -> ch == '_').count();
+            currentGuess = new StringBuilder(guess);
+            return n;
         } else {
             return 0;
         }
