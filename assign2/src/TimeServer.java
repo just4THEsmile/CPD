@@ -31,8 +31,7 @@ public class TimeServer extends Thread {
     public static void main(String[] args) {
         System.out.println("Server is running");
         db = new DatabaseController();
-        db.createQueue(0); // create casual queue
-        db.createQueue(1); // create ranked queue
+
         //------------------------------------------------------- DATABASE CONNECTION
         if (args.length < 1) {
             System.out.println("Usage: java TimeServer <port>");
