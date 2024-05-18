@@ -31,6 +31,8 @@ public class TimeServer extends Thread {
     public static void main(String[] args) {
         System.out.println("Server is running");
         db = new DatabaseController();
+        db.createQueue(0); // create casual queue
+        db.createQueue(1); // create ranked queue
         //------------------------------------------------------- DATABASE CONNECTION
         if (args.length < 1) {
             System.out.println("Usage: java TimeServer <port>");
@@ -60,7 +62,6 @@ public class TimeServer extends Thread {
 
     private static class QueueHandler implements Runnable {
         int waiting_time_ranked = 0;
-        
 
         public void run(){
             while(true) {
@@ -239,6 +240,9 @@ public class TimeServer extends Thread {
                                     MyPlayer player = new MyPlayer(socket, player_id, db.getUsername(player_id), score);
                                     lock.unlock();
                                     queue_ranked.add(player);
+
+                                    queue_ranked.sort((a, b) -> (Integer) a.getValue() - (Integer) b.getValue());
+
                                     System.out.println("queue" + queue_casual.size());
                                     System.out.println("queue" + queue_ranked.size());
                                     return;
