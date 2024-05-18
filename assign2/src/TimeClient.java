@@ -83,6 +83,12 @@ public class TimeClient {
                             System.out.println("Login \033[32msuccess \033[39m");
                             System.out.println("----------------------");
                             state = State.GAME_SELECTION;
+                        }else if(response.equals("RECONNECTED")){
+                            System.out.println("----------------------");
+                            System.out.println("Reconnected!");
+                            System.out.println("----------------------");
+                            state = State.PLAYING;
+
                         } else {
                             System.out.println("----------------------");
                             System.out.println("Login \033[31mfailed\033[39m password or username is incorrect");

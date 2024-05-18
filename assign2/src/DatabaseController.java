@@ -28,6 +28,12 @@ public class DatabaseController
                 System.out.println("id= " + rs.getInt("id"));
                 System.out.println("score = " + rs.getString("score"));
             }
+            // remove games
+            statement.executeUpdate("drop table if exists game_person");
+            statement.executeUpdate("drop table if exists game");
+            statement.executeUpdate("create table game (game_id integer primary key)");
+            statement.executeUpdate("create table game_person (game_id integer, person_id integer, primary key (game_id, person_id))");
+
             System.out.println("------------");
             System.out.println("----test_db----");
             System.out.println("------------");
@@ -55,7 +61,7 @@ public class DatabaseController
         }
     }
 
-    public static int createGame(List <String> players){
+    public static int createGame(List <String> players_id){
         int max_game_id = 0;
         try{
             String sql = "SELECT MAX(game_id) AS max_game_id FROM game";
@@ -71,23 +77,13 @@ public class DatabaseController
             statement = connection.prepareStatement(sqlString);
             statement.setInt(1, max_game_id);
             statement.executeUpdate();
-            for(String player: players){
+            for(String player_id: players_id){
 
-                String sqlString2 = "SELECT MAX(id) AS id FROM person where name = ?;";
-                PreparedStatement statement2 = connection.prepareStatement(sqlString2);
-                statement2.setString(1, player);
-                ResultSet rs2 = statement2.executeQuery();
 
-                if(!rs2.next()){
-                    System.out.println("ERROR");
-                    return -1;
-                }
-
-                int person_id = rs2.getInt("id");
                 String sqlString3 = "insert into game_person values(?, ?)";
                 PreparedStatement statement3 = connection.prepareStatement(sqlString3);
                 statement3.setInt(1, max_game_id);
-                statement3.setInt(2, person_id);
+                statement3.setString(2, player_id);
                 statement3.executeUpdate();
             }
         } catch(SQLException e) {
@@ -147,6 +143,22 @@ public class DatabaseController
             e.printStackTrace();
         }
         return -1;
+    }
+
+    public static String getUsername(int id){
+        try{
+            String sql = "select name from person where id = ?;";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, id);
+            ResultSet rs = statement.executeQuery();
+            if(!rs.next()){
+                return null;
+            }
+            return rs.getString("name");
+        }catch(SQLException e){
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public static int register(String player, String password){
@@ -224,8 +236,9 @@ public class DatabaseController
             PreparedStatement statement = connection.prepareStatement(sqlString);
             statement.setInt(1, id);
             ResultSet rs = statement.executeQuery();
-            if(rs.next()){
-                System.out.println("ERROR");
+            if(!rs.next()){
+                System.out.println("get score Error");
+
                 return -1;
             }
             return rs.getInt("score");

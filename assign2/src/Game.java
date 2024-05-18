@@ -13,23 +13,45 @@ enum RoundResult {
 }
 
 public class Game {
-    private List<Socket> userSockets;
+    static private List<MyPlayer> players;
     private String secretWord;
     private StringBuilder currentGuess;
     private int currentPlayerIndex;
     private List<Integer> playerScores;
+    private int gameID;
 
-    public Game(int players, List<Socket> userSockets) {
-        this.userSockets = userSockets;
+    public Game(int players_num, List<MyPlayer> players,int gameID) {
+        Game.players = players;
         this.secretWord = "hangman";
         this.currentGuess = new StringBuilder();
         this.currentPlayerIndex = 0;
         this.playerScores = new ArrayList<>();
+        this.gameID = gameID;
+    }
+
+    public int getGameID() {
+        return gameID;
+    }
+
+    public void ReconnectPlayer(MyPlayer reconnected_player) {
+        // Code to add a player to the game
+
+
+        for(MyPlayer player : players){
+            if(player.getPlayerID() == reconnected_player.getPlayerID()){
+                player.setSocket(reconnected_player.getKey());
+                return;
+            }
+        }
+        System.out.println("Player reconnected to game " + gameID + ": " + reconnected_player.getUsername());
+
+        
+
     }
 
     public void start() {
         // Code to start the game
-        System.out.println("Starting game with " + userSockets.size() + " players");
+        System.out.println("Starting game with " + players.size() + " players");
 
         // Initialize the currentWordGuesses list with underscores representing each letter of the word
         for (int i = 0; i < secretWord.length(); i++) {
@@ -37,14 +59,14 @@ public class Game {
         }
 
         // Initialize the player scores
-        for (int i = 0; i < userSockets.size(); i++) {
+        for (int i = 0; i < players.size(); i++) {
             playerScores.add(0);
         }
 
         // Send the initial game state to all players
-        for (Socket socket : userSockets) {
+        for (MyPlayer player : players) {
             try {
-                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+                PrintWriter writer = new PrintWriter(player.getKey().getOutputStream(), true);
                 writer.println("Starting Hangman game!");
                 writer.println("The word has " + secretWord.length() + " letters.");
                 writer.println("Current word: " + currentGuess.toString());
@@ -59,9 +81,9 @@ public class Game {
         }
 
         // Game over
-        for (Socket socket : userSockets) {
+        for (MyPlayer player : players) {
             try {
-                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+                PrintWriter writer = new PrintWriter(player.getKey().getOutputStream(), true);
                 writer.println("Game over! The word was: " + secretWord);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -74,10 +96,10 @@ public class Game {
         System.out.println("Playing round for player " + (currentPlayerIndex + 1));
 
         // Get the current player's socket
-        Socket currentPlayerSocket = userSockets.get(currentPlayerIndex);
+        MyPlayer currentPlayerSocket = players.get(currentPlayerIndex);
 
         // Receive the guess from the current player
-        String guess = receiveGuess(currentPlayerSocket);
+        String guess = receiveGuess(currentPlayerSocket.getKey());
 
         RoundResult result = RoundResult.INVALIDGUESS;
         // Update the current word guesses based on the guess
@@ -93,9 +115,9 @@ public class Game {
         }
 
         // Send the updated game state to all players
-        for (Socket socket : userSockets) {
+        for (MyPlayer player : players) {
             try {
-                PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
+                PrintWriter writer = new PrintWriter(player.getKey().getOutputStream(), true);
                 switch (result) {
                     case GUESSLETTER:
                         writer.println("Player " + (currentPlayerIndex + 1) + " guessed: " + guess);
@@ -114,6 +136,9 @@ public class Game {
                         break;
                 }
             } catch (IOException e) {
+                int playerIndex = players.indexOf(player);
+                players.remove(player);
+                playerScores.remove(playerIndex);
                 e.printStackTrace();
             }
         }
@@ -122,9 +147,10 @@ public class Game {
         if (result == RoundResult.GUESSLETTER || result == RoundResult.GUESSWORD) {
             playerScores.set(currentPlayerIndex, playerScores.get(currentPlayerIndex) + numOccurrences);
         }
-
+        // 
         // Move to the next player
-        currentPlayerIndex = (currentPlayerIndex + 1) % userSockets.size();
+        System.out.println("Moving to next player"+currentPlayerIndex + " " + players.size());
+        currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
     }
 
     private String receiveGuess(Socket socket) {

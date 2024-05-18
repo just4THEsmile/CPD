@@ -22,8 +22,9 @@ import java.util.ArrayList;
 
 public class TimeServer extends Thread {
     private static ReentrantLock lock = new ReentrantLock();
-    static ArrayList<Socket> queue_casual = new ArrayList<>();
-    static ArrayList<MyPair<Socket,Integer>> queue_ranked = new ArrayList<>();
+    static ArrayList<MyPlayer> queue_casual = new ArrayList<>();
+    static ArrayList<MyPlayer> queue_ranked = new ArrayList<>();
+    static ArrayList<Game> games = new ArrayList<>();
     static DatabaseController db;
 
     public static void main(String[] args) {
@@ -58,6 +59,7 @@ public class TimeServer extends Thread {
 
     private static class QueueHandler implements Runnable {
         int waiting_time_ranked = 0;
+        
 
         public void run(){
             while(true) {
@@ -69,7 +71,7 @@ public class TimeServer extends Thread {
 
                 if (queue_casual.size() >= 2) { // Start a new game after 2 players have connected
                     // get the first 2 values from the queue
-                    ArrayList <Socket> temp = new ArrayList<Socket>();
+                    ArrayList <MyPlayer> temp = new ArrayList<MyPlayer>();
                     temp.add(queue_casual.get(0));
                     temp.add(queue_casual.get(1));
                     queue_casual.remove(0);
@@ -85,13 +87,13 @@ public class TimeServer extends Thread {
                 if (queue_ranked.size() >= 2) { // Start a new game after 2 players have connected
                     // Try each combination of two players that are closest
                     for (int i = 0; i < queue_ranked.size() - 1; i++) {
-                        MyPair pair_1 = queue_ranked.get(i);
-                        MyPair pair_2 = queue_ranked.get(i + 1);
+                        MyPlayer pair_1 = queue_ranked.get(i);
+                        MyPlayer pair_2 = queue_ranked.get(i + 1);
 
                         if(Math.abs((Integer) pair_1.getValue() - (Integer) pair_2.getValue()) < waiting_time_ranked){
-                            ArrayList <Socket> temp = new ArrayList<Socket>();
-                            temp.add((Socket)pair_1.getKey());
-                            temp.add((Socket)pair_2.getKey());
+                            ArrayList <MyPlayer> temp = new ArrayList<MyPlayer>();
+                            temp.add(pair_1);
+                            temp.add(pair_2);
                             queue_ranked.remove(pair_1);
                             queue_ranked.remove(pair_2);
 
@@ -139,7 +141,6 @@ public class TimeServer extends Thread {
                     } else {
                         line = reader.readLine();
                     }
-
                     if (line != null) {
                         switch (line) {
                             case "LOGIN":
@@ -157,7 +158,20 @@ public class TimeServer extends Thread {
                                     System.out.println("----------------------");
                                     System.out.println("\033[32mLogin success \033[30m");
                                     System.out.println("----------------------");
-                                    writer.println("SUCCESS");
+                                    
+                                    username = db.getUsername(player_id);
+                                    int game_id=db.get_game_from_user(player_id);
+                                    if(game_id!=-1){
+                                        writer.println("RECONNECTED");
+                                        for (Game game : games) {
+                                            if(game.getGameID()==game_id){
+                                                game.ReconnectPlayer(new MyPlayer(socket, player_id, username, db.getScore(player_id)));
+                                                return;
+                                            }
+                                        }
+                                    }else{
+                                        writer.println("SUCCESS");
+                                    }
                                 }
                                 break;
                             case "REGISTER":
@@ -173,6 +187,7 @@ public class TimeServer extends Thread {
                                 } else {
                                     System.out.println("Register success");
                                     writer.println("SUCCESS");
+                                    username = db.getUsername(player_id);
                                 }
                                 break;
                             case "LOGOUT":
@@ -192,7 +207,10 @@ public class TimeServer extends Thread {
 
                                 if (gameType.equals("CASUAL")) {
                                     System.out.println("Casual");
-                                    queue_casual.add(socket);
+                                    System.out.println(player_id);
+                                    int score = db.getScore(player_id);
+                                    MyPlayer player = new MyPlayer(socket, player_id, db.getUsername(player_id), score);
+                                    queue_casual.add(player);
                                     System.out.println("queue"+queue_casual.size());
                                     System.out.println("queue"+queue_ranked.size());
                                     return;
@@ -201,7 +219,7 @@ public class TimeServer extends Thread {
                                     System.out.println("Ranked");
                                     int score = db.getScore(player_id);
 
-                                    MyPair<Socket, Integer> player = new MyPair<>(socket, score);
+                                    MyPlayer player = new MyPlayer(socket, player_id, db.getUsername(player_id), score);
                                     queue_ranked.add(player);
                                     System.out.println("queue" + queue_casual.size());
                                     System.out.println("queue" + queue_ranked.size());
@@ -234,10 +252,10 @@ public class TimeServer extends Thread {
     }
 
     private static class GameHandler implements Runnable {
-        List<Socket> userSockets;
+        static List<MyPlayer> userSockets;
 
-        public GameHandler(List<Socket> userSockets) {
-            this.userSockets = new ArrayList<>(userSockets);
+        public GameHandler(List<MyPlayer> userSockets) {
+            TimeServer.GameHandler.userSockets = userSockets;
         }
 
         public void run() {
@@ -248,25 +266,43 @@ public class TimeServer extends Thread {
             // Notify the clients that the game has started
             PrintWriter writer;
 
+            List<String> player_ids = new ArrayList<>();
+            for (int i = 0; i < userSockets.size(); i++) {
+                player_ids.add(userSockets.get(i).getPlayerID().toString());
+            }
             try {
                 for (int i = 0; i < userSockets.size(); i++) {
-                    Socket socket = userSockets.get(i);
+                    Socket socket = userSockets.get(i).getKey();
                     writer = new PrintWriter(socket.getOutputStream(), true);
                     writer.println("GAME_FOUND");
                 }
             } catch(IOException e) {
                 e.printStackTrace();
             }
-
-            Game game = new Game(userSockets.size(), userSockets);
+            lock.lock();
+            int game_id = db.createGame(player_ids);
+            lock.unlock();
+            if(game_id == -1){
+                System.out.println("Game creation failed");
+            } else {
+                System.out.println("Game creation success");
+            }
+            
+            Game game = new Game(userSockets.size(), userSockets,game_id);
+            games.add(game);
             game.start();
+            games.remove(game);
+            lock.lock();
+            db.deleteGame(game_id);
+            lock.unlock();
+            System.out.println("removing game");
 
             // Print user scores
             for (int i = 0; i < userSockets.size(); i++) {
                 try {
-                    Socket socket = userSockets.get(i);
-                    writer = new PrintWriter(socket.getOutputStream(), true);
-                    InputStream input = socket.getInputStream();
+                    MyPlayer player = userSockets.get(i);
+                    writer = new PrintWriter(player.getKey().getOutputStream(), true);
+                    InputStream input = player.getKey().getInputStream();
                     BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
                     int player_score = game.getScore(i);
@@ -281,7 +317,7 @@ public class TimeServer extends Thread {
                     db.updateScore(player_id, db.getScore(player_id) + player_score);
                     lock.unlock();
 
-                    new Thread(new PlayerHandler(socket, player_id)).start();
+                    new Thread(new PlayerHandler(player.getKey(), player_id)).start();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
