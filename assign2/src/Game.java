@@ -126,15 +126,15 @@ public class Game {
                 PrintWriter writer = new PrintWriter(player.getKey().getOutputStream(), true);
                 switch (result) {
                     case GUESSLETTER:
-                        writer.println("Player " + (currentPlayerIndex + 1) + " guessed: " + guess);
+                        writer.println("Player " + players.get(currentPlayerIndex).getUsername() + " guessed: " + guess);
                         writer.println("Current word: " + currentGuess);
                         break;
                     case GUESSWORD:
-                        writer.println("Player " + (currentPlayerIndex + 1) + " guessed the word: " + guess);
+                        writer.println("Player " + players.get(currentPlayerIndex).getUsername() + " guessed the word: " + guess);
                         writer.println("Current word: " + currentGuess);
                         break;
                     case FAILEDGUESS:
-                        writer.println("Player " + (currentPlayerIndex + 1) + " guessed: " + guess + " - Incorrect guess!");
+                        writer.println("Player " + players.get(currentPlayerIndex).getUsername() + " guessed: " + guess + " - Incorrect guess!");
                         writer.println("Current word: " + currentGuess);
                         break;
                     case INVALIDGUESS:
