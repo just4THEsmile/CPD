@@ -44,7 +44,50 @@ public class DatabaseController
             System.out.println("bruhh1");
             e.printStackTrace(System.err);
         }
+    }
 
+    public static void main(String[] args)
+    {
+        try
+        {
+
+            connection = DriverManager.getConnection("jdbc:sqlite:sample.db");
+            statement = connection.createStatement();
+            statement.setQueryTimeout(30);  // set timeout to 30 sec.
+
+            statement.executeUpdate("drop table if exists person");
+            statement.executeUpdate("drop table if exists game");
+            statement.executeUpdate("drop table if exists game_person");
+            statement.executeUpdate("drop table if exists queue");
+            statement.executeUpdate("drop table if exists queue_person");
+
+            statement.executeUpdate("create table game (game_id integer primary key)");
+            statement.executeUpdate("create table game_person (game_id integer, person_id integer, primary key (game_id, person_id))");
+            statement.executeUpdate("create table person (id integer primary key autoincrement, name TEXT, password TEXT, score integer)");
+            statement.executeUpdate("create table queue (queue_id integer primary key)");
+            statement.executeUpdate("create table queue_person (queue_id integer, person_id integer, primary key (queue_id, person_id))");
+
+            ResultSet rs = statement.executeQuery("SELECT MAX(id) AS max_person_id FROM person;");
+
+            statement.executeUpdate("insert into person values(0 ,'admin',1234, 0)");
+            statement.executeUpdate("insert into person values( 1,'camaramenn',1234, 99999999)");
+
+            rs = statement.executeQuery("select * from person");
+            while(rs.next())
+            {
+                // read the result set
+                System.out.println("name = " + rs.getString("name"));
+                System.out.println("id = " + rs.getInt("id"));
+                System.out.println("score = " + rs.getString("score"));
+            }
+        }
+        catch(SQLException e)
+        {
+            // if the error message is "out of memory",
+            // it probably means no database file is found
+            System.out.println("bruhh");
+            e.printStackTrace(System.err);
+        }
     }
 
     public static Connection getConnection(){
@@ -242,53 +285,111 @@ public class DatabaseController
                 return -1;
             }
             return rs.getInt("score");
-        }catch(SQLException e){
+        } catch(SQLException e) {
             e.printStackTrace();
             return -1;
         }
-
     }
 
-
-
-    public static void main(String[] args)
-    {
-        try
-        {
-
-            connection = DriverManager.getConnection("jdbc:sqlite:sample.db");
-            statement = connection.createStatement();
-            statement.setQueryTimeout(30);  // set timeout to 30 sec.
-
-            statement.executeUpdate("drop table if exists person");
-            statement.executeUpdate("drop table if exists game");
-            statement.executeUpdate("drop table if exists game_person");
-
-            statement.executeUpdate("create table game (game_id integer primary key)");
-            statement.executeUpdate("create table game_person (game_id integer, person_id integer, primary key (game_id, person_id))");
-            statement.executeUpdate("create table person (id integer primary key autoincrement, name string, password string, score integer)");
-
-            ResultSet rs = statement.executeQuery("SELECT MAX(id) AS max_person_id FROM person;");
-
-            statement.executeUpdate("insert into person values(0 ,'admin',1234, 0)");
-            statement.executeUpdate("insert into person values( 1,'camaramenn',1234, 99999999)");
-
-            rs = statement.executeQuery("select * from person");
-            while(rs.next())
-            {
-                // read the result set
-                System.out.println("name = " + rs.getString("name"));
-                System.out.println("id = " + rs.getInt("id"));
-                System.out.println("score = " + rs.getString("score"));
+    /*
+        public static int createGame(List <String> players_id){
+        int max_game_id = 0;
+        try{
+            String sql = "SELECT MAX(game_id) AS max_game_id FROM game";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet rs= statement.executeQuery();
+            if(!rs.next()){
+                max_game_id = 0;
+            }else{
+                max_game_id = rs.getInt("max_game_id");
+                max_game_id++;
             }
-        }
-        catch(SQLException e)
-        {
-            // if the error message is "out of memory",
-            // it probably means no database file is found
-            System.out.println("bruhh");
-            e.printStackTrace(System.err);
-        }
+            String sqlString = "insert into game values(?)";
+            statement = connection.prepareStatement(sqlString);
+            statement.setInt(1, max_game_id);
+            statement.executeUpdate();
+            for(String player_id: players_id){
 
+
+                String sqlString3 = "insert into game_person values(?, ?)";
+                PreparedStatement statement3 = connection.prepareStatement(sqlString3);
+                statement3.setInt(1, max_game_id);
+                statement3.setString(2, player_id);
+                statement3.executeUpdate();
+            }
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+        return max_game_id;
     }
+     */
+
+    public static int createQueue(int queue_id){
+        try {
+            String sql = "insert into queue values(?)";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, queue_id);
+            statement.executeUpdate();
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void deleteQueue(int queue_id) {
+        try {
+            String sql = "delete from queue where queue_id = ?;";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, queue_id);
+            statement.executeUpdate();
+            sql = "delete from queue_person where queue_id = ?;";
+            statement = connection.prepareStatement(sql);
+            statement.setInt(1, queue_id);
+            statement.executeUpdate();
+        } catch(SQLException e){
+            e.printStackTrace();
+        }
+    }
+
+    public static void addPlayerToQueue(int queue_id, int player_id) {
+        try {
+            String sql = "insert into queue_person values(?, ?)";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, queue_id);
+            statement.setInt(2, player_id);
+            statement.executeUpdate();
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void removePlayerFromQueue(int queue_id, int player_id) {
+        try {
+            String sql = "delete from queue_person where queue_id = ? and person_id = ?;";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, queue_id);
+            statement.setInt(2, player_id);
+            statement.executeUpdate();
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static int getQueueFromPlayer(int queue_id) {
+        try {
+            String sql = "select queue_id from queue_person where person_id = ?;";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            statement.setInt(1, queue_id);
+            ResultSet rs = statement.executeQuery();
+            if (!rs.next()) {
+                System.out.println("not in any queue");
+                return -1;
+            }
+            System.out.println("in a queue");
+            return rs.getInt("queue_id");
+        } catch(SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
 }

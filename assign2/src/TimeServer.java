@@ -151,7 +151,11 @@ public class TimeServer extends Thread {
                                 String password = reader.readLine();
                                 System.out.println("username: " + username);
                                 System.out.println("password: " + password);
+
+                                lock.lock();
                                 player_id = db.login(username, password);
+                                lock.unlock();
+
                                 writer.println(player_id);
 
                                 if (player_id == -1) {
@@ -161,18 +165,21 @@ public class TimeServer extends Thread {
                                     System.out.println("----------------------");
                                     System.out.println("\033[32mLogin success \033[30m");
                                     System.out.println("----------------------");
-                                    
+
+                                    lock.lock();
                                     username = db.getUsername(player_id);
-                                    int game_id=db.get_game_from_user(player_id);
-                                    if(game_id!=-1){
+                                    int game_id = db.get_game_from_user(player_id);
+                                    lock.unlock();
+
+                                    if (game_id != -1) {
                                         writer.println("RECONNECTED");
                                         for (Game game : games) {
-                                            if(game.getGameID()==game_id){
+                                            if (game.getGameID()==game_id) {
                                                 game.ReconnectPlayer(new MyPlayer(socket, player_id, username, db.getScore(player_id)));
                                                 return;
                                             }
                                         }
-                                    }else{
+                                    } else {
                                         writer.println("SUCCESS");
                                     }
                                 }
@@ -182,7 +189,10 @@ public class TimeServer extends Thread {
                                 password = reader.readLine();
                                 System.out.println("username: " + username);
                                 System.out.println("password: " + password);
+
+                                lock.lock();
                                 player_id = db.register(username, password);
+                                lock.unlock();
 
                                 if (player_id == -1) {
                                     System.out.println("Register failed");
@@ -190,7 +200,9 @@ public class TimeServer extends Thread {
                                 } else {
                                     System.out.println("Register success");
                                     writer.println("SUCCESS");
+                                    lock.lock();
                                     username = db.getUsername(player_id);
+                                    lock.unlock();
                                 }
                                 break;
                             case "LOGOUT":
@@ -211,8 +223,10 @@ public class TimeServer extends Thread {
                                 if (gameType.equals("CASUAL")) {
                                     System.out.println("Casual");
                                     System.out.println(player_id);
+                                    lock.lock();
                                     int score = db.getScore(player_id);
                                     MyPlayer player = new MyPlayer(socket, player_id, db.getUsername(player_id), score);
+                                    lock.unlock();
                                     queue_casual.add(player);
                                     System.out.println("queue"+queue_casual.size());
                                     System.out.println("queue"+queue_ranked.size());
@@ -220,9 +234,10 @@ public class TimeServer extends Thread {
 
                                 } else if(gameType.equals("RANKED")){
                                     System.out.println("Ranked");
+                                    lock.lock();
                                     int score = db.getScore(player_id);
-
                                     MyPlayer player = new MyPlayer(socket, player_id, db.getUsername(player_id), score);
+                                    lock.unlock();
                                     queue_ranked.add(player);
                                     System.out.println("queue" + queue_casual.size());
                                     System.out.println("queue" + queue_ranked.size());
