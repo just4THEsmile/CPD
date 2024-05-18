@@ -101,6 +101,16 @@ public class Game {
         // Receive the guess from the current player
         String guess = receiveGuess(currentPlayerSocket.getKey());
 
+        while(guess == null){
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            guess = receiveGuess(currentPlayerSocket.getKey());
+        }
+
+
         RoundResult result = RoundResult.INVALIDGUESS;
         // Update the current word guesses based on the guess
         int numOccurrences = -1;
@@ -161,8 +171,16 @@ public class Game {
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             return reader.readLine();
         } catch (IOException e) {
-            e.printStackTrace();
-            return "Could not receive guess";
+            for (MyPlayer player : players) {
+                try {
+                PrintWriter writer = new PrintWriter(player.getKey().getOutputStream(), true);
+                writer.println("Waiting for player " + (currentPlayerIndex + 1) + ". He disconnected!");
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+            }
+            return null;
         }
     }
 
