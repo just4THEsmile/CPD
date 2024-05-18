@@ -20,7 +20,7 @@ public class Game {
     private List<Integer> playerScores;
     private int gameID;
 
-    public Game(int players_num, List<MyPlayer> players,int gameID) {
+    public Game(int players_num, List<MyPlayer> players, int gameID) {
         Game.players = players;
         this.secretWord = "hangman";
         this.currentGuess = new StringBuilder();
@@ -35,18 +35,14 @@ public class Game {
 
     public void ReconnectPlayer(MyPlayer reconnected_player) {
         // Code to add a player to the game
-
-
-        for(MyPlayer player : players){
-            if(player.getPlayerID() == reconnected_player.getPlayerID()){
+        for (MyPlayer player : players) {
+            if (player.getPlayerID() == reconnected_player.getPlayerID()) {
                 player.setSocket(reconnected_player.getKey());
                 return;
             }
         }
+
         System.out.println("Player reconnected to game " + gameID + ": " + reconnected_player.getUsername());
-
-        
-
     }
 
     public void start() {
@@ -101,7 +97,7 @@ public class Game {
         // Receive the guess from the current player
         String guess = receiveGuess(currentPlayerSocket.getKey());
 
-        while(guess == null){
+        while (guess == null) {
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {

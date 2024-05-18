@@ -26,6 +26,7 @@ public class TimeServer extends Thread {
     static ArrayList<MyPlayer> queue_ranked = new ArrayList<>();
     static ArrayList<Game> games = new ArrayList<>();
     static DatabaseController db;
+    static final int num_players = 2;
 
     public static void main(String[] args) {
         System.out.println("Server is running");
@@ -69,13 +70,14 @@ public class TimeServer extends Thread {
                     e.printStackTrace();
                 }
 
-                if (queue_casual.size() >= 2) { // Start a new game after 2 players have connected
-                    // get the first 2 values from the queue
+                if (queue_casual.size() >= num_players) { // Start a new game after 2 players have connected
+                    // get the first num_players from the queue
                     ArrayList <MyPlayer> temp = new ArrayList<MyPlayer>();
-                    temp.add(queue_casual.get(0));
-                    temp.add(queue_casual.get(1));
-                    queue_casual.remove(0);
-                    queue_casual.remove(0);
+                    for (int i = 0; i < num_players; i++) {
+                        temp.add(queue_casual.get(0));
+                        queue_casual.remove(0);
+                    }
+
                     new Thread(new GameHandler(temp)).start();
                 }
 
@@ -84,18 +86,19 @@ public class TimeServer extends Thread {
                     waiting_time_ranked += 20;
                 }
 
-                if (queue_ranked.size() >= 2) { // Start a new game after 2 players have connected
-                    // Try each combination of two players that are closest
-                    for (int i = 0; i < queue_ranked.size() - 1; i++) {
-                        MyPlayer pair_1 = queue_ranked.get(i);
-                        MyPlayer pair_2 = queue_ranked.get(i + 1);
+                if (queue_ranked.size() >= num_players) { // Start a new game after num_players players have connected
+                    // Try each combination of num_players players that are closest in rank
+                    for (int i = 0; i < queue_ranked.size() - num_players + 1; i++) {
+                        MyPlayer pair_1 = queue_ranked.get(i); // highest ranked player in group
+                        MyPlayer pair_2 = queue_ranked.get(i + num_players - 1); // lowest ranked player in group
 
-                        if(Math.abs((Integer) pair_1.getValue() - (Integer) pair_2.getValue()) < waiting_time_ranked){
+                        if (Math.abs((Integer) pair_1.getValue() - (Integer) pair_2.getValue()) < waiting_time_ranked) { // If the players are close enough in rank
                             ArrayList <MyPlayer> temp = new ArrayList<MyPlayer>();
-                            temp.add(pair_1);
-                            temp.add(pair_2);
-                            queue_ranked.remove(pair_1);
-                            queue_ranked.remove(pair_2);
+
+                            for (int j = 0; j < num_players; j++) {
+                                temp.add(queue_ranked.get(i));
+                                queue_ranked.remove(i);
+                            }
 
                             if (queue_ranked.isEmpty()) {
                                 waiting_time_ranked = 0;
@@ -282,7 +285,7 @@ public class TimeServer extends Thread {
             lock.lock();
             int game_id = db.createGame(player_ids);
             lock.unlock();
-            if(game_id == -1){
+            if (game_id == -1) {
                 System.out.println("Game creation failed");
             } else {
                 System.out.println("Game creation success");
