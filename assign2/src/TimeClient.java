@@ -83,6 +83,54 @@ public class TimeClient {
                             System.out.println("Login \033[32msuccess \033[39m");
                             System.out.println("----------------------");
                             state = State.GAME_SELECTION;
+                        }else if(response.equals("RECONNECTED_CASUAL")){
+                            System.out.println("----------------------");
+                            System.out.println("Reconnected to the Casual Queue!");
+                            System.out.println("----------------------");
+
+                            while(!reader.ready()){
+                                //reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                            }
+
+                            response = reader.readLine();
+                            System.out.println("response");
+                            System.out.println(response);
+                            while(response.equals("PING")){
+                                writer.println("PING");
+                                response = reader.readLine();
+                            }
+                            if(response.equals("GAME_FOUND")){
+                                System.out.println("----------------------");
+                                System.out.println("Found a game!");
+                                System.out.println("----------------------");
+                                state = State.PLAYING;
+                            }
+
+
+                        }else if(response.equals("RECONNECTED_RANKED")){
+                            System.out.println("----------------------");
+                            System.out.println("Reconnected to the Ranked Queue!");
+                            System.out.println("----------------------");
+
+                            while(!reader.ready()){
+                                //reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                            }
+
+                            response = reader.readLine();
+                            System.out.println("response");
+                            System.out.println(response);
+                            while(response.equals("PING")){
+                                writer.println("PING");
+                                response = reader.readLine();
+                            }
+                            if(response.equals("GAME_FOUND")){
+                                System.out.println("----------------------");
+                                System.out.println("Found a game!");
+                                System.out.println("----------------------");
+                                state = State.PLAYING;
+                            }
+
+
                         }else if(response.equals("RECONNECTED")){
                             System.out.println("----------------------");
                             System.out.println("Reconnected!");
@@ -136,6 +184,10 @@ public class TimeClient {
                                 response = reader.readLine();
                                 System.out.println("response");
                                 System.out.println(response);
+                                while(response.equals("PING")){
+                                    writer.println("PING");
+                                    response = reader.readLine();
+                                }
                                 if(response.equals("GAME_FOUND")){
                                     System.out.println("----------------------");
                                     System.out.println("Found a game!");
@@ -154,6 +206,10 @@ public class TimeClient {
                                 }
 
                                 response = reader.readLine();
+                                while(response.equals("PING")){
+                                    writer.println("PING");
+                                    response = reader.readLine();
+                                }
                                 if (response.equals("GAME_FOUND")){
                                     System.out.println("----------------------");
                                     System.out.println("Found a game!");

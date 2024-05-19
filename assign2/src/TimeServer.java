@@ -73,12 +73,44 @@ public class TimeServer extends Thread {
                 if (queue_casual.size() >= num_players) { // Start a new game after 2 players have connected
                     // get the first num_players from the queue
                     ArrayList <MyPlayer> temp = new ArrayList<MyPlayer>();
+                    Boolean flag = true;
                     for (int i = 0; i < num_players; i++) {
-                        temp.add(queue_casual.get(0));
-                        queue_casual.remove(0);
-                    }
+                        MyPlayer player = queue_casual.get(i);
+                        // check if every socket is still connected by pinging each one
+                        
+                        try {
+                            System.out.println("Player: " + player);
+                            PrintWriter writer = new PrintWriter(player.getKey().getOutputStream(), true);
 
-                    new Thread(new GameHandler(temp)).start();
+                            writer.println("PING");
+
+                            InputStream input = player.getKey().getInputStream();
+                            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+                            String ping=reader.readLine();
+                            if(!ping.equals("PING")){
+                                System.out.println("Player disconnected Ping");
+                                queue_casual.remove(i);
+                                flag = false;
+                                break;
+                            }
+
+
+                            temp.add(player);
+                            System.out.println("Player: " + player);
+                        } catch (IOException e) {
+                            System.out.println("Player disconnected");
+                            queue_casual.remove(i);
+                            flag = false;
+                            break;
+                        }
+                    }
+                    if(flag){
+                        // remove the players from the queue
+                        for (int i = 0; i < num_players; i++) {
+                            queue_casual.remove(0);
+                        }
+                        new Thread(new GameHandler(temp)).start();
+                    }
                 }
 
                 // ranked game timeout
@@ -95,16 +127,32 @@ public class TimeServer extends Thread {
                         if (Math.abs((Integer) pair_1.getValue() - (Integer) pair_2.getValue()) < waiting_time_ranked) { // If the players are close enough in rank
                             ArrayList <MyPlayer> temp = new ArrayList<MyPlayer>();
 
+                            Boolean flag = true;
                             for (int j = 0; j < num_players; j++) {
-                                temp.add(queue_ranked.get(i));
-                                queue_ranked.remove(i);
+                                MyPlayer player= queue_ranked.get(i);
+                                try {
+                                    PrintWriter writer = new PrintWriter(player.getKey().getOutputStream(), true);
+                                    writer.println("PING");
+                                    temp.add(player);
+                                } catch (IOException e) {
+                                    System.out.println("Player disconnected");
+                                    queue_casual.remove(i);
+                                    flag = false;
+                                    break;
+                                }
                             }
+                            if(flag){
+                                // remove the players from the queue
+                                for (int j = 0; j < num_players; j++) {
+                                    queue_ranked.remove(i);
+                                }
 
-                            if (queue_ranked.isEmpty()) {
-                                waiting_time_ranked = 0;
+                                if (queue_ranked.isEmpty()) {
+                                    waiting_time_ranked = 0;
+                                }
+
+                                new Thread(new GameHandler(temp)).start();
                             }
-
-                            new Thread(new GameHandler(temp)).start();
                         }
                     }
                 }
@@ -170,6 +218,20 @@ public class TimeServer extends Thread {
                                     username = db.getUsername(player_id);
                                     int game_id = db.get_game_from_user(player_id);
                                     lock.unlock();
+                                    for(MyPlayer player : queue_casual){
+                                        if(player.getPlayerID() == player_id){
+                                            writer.println("RECONNECTED_CASUAL");
+                                            player.setSocket(socket);
+                                            return;
+                                        }
+                                    }
+                                    for(MyPlayer player : queue_ranked){
+                                        if(player.getPlayerID() == player_id){
+                                            writer.println("RECONNECTED_RANKED");
+                                            player.setSocket(socket);
+                                            return;
+                                        }
+                                    }
 
                                     if (game_id != -1) {
                                         writer.println("RECONNECTED");
